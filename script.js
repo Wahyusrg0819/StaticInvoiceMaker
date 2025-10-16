@@ -110,22 +110,53 @@ async function downloadPDF() {
     try {
         const invoice = document.getElementById('invoice');
 
-        // Capture invoice as canvas with higher scale for quality
+        // Temporarily show invoice if hidden (mobile)
+        const originalDisplay = invoice.style.display;
+        const originalWidth = invoice.style.width;
+        const originalMaxWidth = invoice.style.maxWidth;
+        const originalPadding = invoice.style.padding;
+
+        invoice.style.display = 'block';
+        invoice.style.position = 'relative';
+        invoice.style.visibility = 'visible';
+        invoice.style.width = '210mm'; // A4 width
+        invoice.style.maxWidth = '210mm';
+        invoice.style.padding = '10mm 8mm'; // Smaller padding for more content
+
+        // Temporarily hide watermark to avoid CORS issues
+        invoice.classList.add('no-watermark');
+
+        // Wait a bit for style to apply
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Capture invoice as canvas
         const canvas = await html2canvas(invoice, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: false,
+            scale: 1.5,
             logging: false,
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            width: invoice.offsetWidth,
+            height: invoice.offsetHeight
         });
+
+        // Restore watermark and original styles
+        invoice.classList.remove('no-watermark');
+        invoice.style.display = originalDisplay;
+        invoice.style.width = originalWidth;
+        invoice.style.maxWidth = originalMaxWidth;
+        invoice.style.padding = originalPadding;
+
+        // Check if canvas is valid
+        if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            throw new Error(`Canvas capture failed - width: ${canvas?.width}, height: ${canvas?.height}`);
+        }
 
         // A4 dimensions in mm
         const pdfWidth = 210;
         const pdfHeight = 297;
 
         // Calculate image dimensions to fit A4 with minimal margins
-        const marginX = 10; // 10mm margin kiri-kanan
-        const marginY = 10; // 10mm margin atas-bawah
+        const marginX = 5; // 5mm margin kiri-kanan (lebih kecil)
+        const marginY = 8; // 8mm margin atas-bawah
         const availableWidth = pdfWidth - (marginX * 2);
         const availableHeight = pdfHeight - (marginY * 2);
 
@@ -145,19 +176,84 @@ async function downloadPDF() {
         const heightRatio = availableHeight / imgHeightMm;
         const scale = Math.min(widthRatio, heightRatio);
 
-        const finalWidth = imgWidthMm * scale;
-        const finalHeight = imgHeightMm * scale;
+        let finalWidth = imgWidthMm * scale;
+        let finalHeight = imgHeightMm * scale;
 
-        // Center horizontally, align top with margin
-        const xOffset = (pdfWidth - finalWidth) / 2;
-        const yOffset = marginY;
+        // Ensure dimensions are valid (not NaN, not negative, not zero)
+        if (!finalWidth || finalWidth <= 0 || isNaN(finalWidth)) {
+            finalWidth = availableWidth;
+        }
+        if (!finalHeight || finalHeight <= 0 || isNaN(finalHeight)) {
+            finalHeight = availableHeight;
+        }
+
+        // Use full available width instead of centering
+        finalWidth = availableWidth;
+        finalHeight = (canvas.height / canvas.width) * availableWidth;
+
+        // Check if height exceeds available height
+        if (finalHeight > availableHeight) {
+            finalHeight = availableHeight;
+            finalWidth = (canvas.width / canvas.height) * availableHeight;
+        }
+
+        // Align to left margin
+        let xOffset = marginX;
+        let yOffset = marginY;
+
+        // Ensure offsets are valid
+        if (isNaN(xOffset) || xOffset < 0) {
+            xOffset = marginX;
+        }
+        if (isNaN(yOffset) || yOffset < 0) {
+            yOffset = marginY;
+        }
 
         // Create PDF
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
 
+        // Add invoice content first
         const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+
+        // Add watermark on top with transparency
+        try {
+            // Load watermark image
+            const watermarkImg = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Failed to load watermark'));
+                img.src = 'https://res.cloudinary.com/devdvp44p/image/upload/v1760606379/My%20Brand/image-removebg-preview_lwqo5r.png';
+
+                // Timeout after 5 seconds
+                setTimeout(() => reject(new Error('Watermark load timeout')), 5000);
+            });
+
+            // Calculate watermark size (50% of page width, centered)
+            const watermarkWidth = pdfWidth * 0.5;
+            const watermarkHeight = (watermarkImg.height / watermarkImg.width) * watermarkWidth;
+            const watermarkX = (pdfWidth - watermarkWidth) / 2;
+            const watermarkY = (pdfHeight - watermarkHeight) / 2;
+
+            // Convert image to base64
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = watermarkImg.width;
+            tempCanvas.height = watermarkImg.height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(watermarkImg, 0, 0);
+            const watermarkData = tempCanvas.toDataURL('image/png');
+
+            // Add watermark with transparency on top of content
+            pdf.setGState(new pdf.GState({ opacity: 0.15 }));
+            pdf.addImage(watermarkData, 'PNG', watermarkX, watermarkY, watermarkWidth, watermarkHeight);
+            pdf.setGState(new pdf.GState({ opacity: 1 }));
+
+            console.log('Watermark added successfully at position:', watermarkX, watermarkY, 'size:', watermarkWidth, watermarkHeight);
+        } catch (e) {
+            console.log('Watermark failed to load:', e.message);
+        }
 
         // Generate filename with customer name and date
         const customerName = document.getElementById('nama').value.replace(/\s+/g, '_');
@@ -191,6 +287,29 @@ formInputs.forEach(input => {
     input.addEventListener('input', updateInvoice);
 });
 
+// Pre-load watermark image
+let watermarkImageData = null;
+const preloadWatermark = () => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        watermarkImageData = {
+            data: canvas.toDataURL('image/png'),
+            width: img.width,
+            height: img.height
+        };
+        console.log('Watermark preloaded successfully');
+    };
+    img.onerror = () => console.log('Failed to preload watermark');
+    img.src = 'https://res.cloudinary.com/devdvp44p/image/upload/v1760606379/My%20Brand/image-removebg-preview_lwqo5r.png';
+};
+
 // Initialize
+preloadWatermark();
 initializeDates();
 updateInvoice();
