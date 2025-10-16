@@ -207,11 +207,17 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    color: rgba(0, 0, 0, 0.3);
 }
 
 .form-group input:focus {
     outline: none;
     border-color: #4CAF50;
+}
+
+.form-group input::placeholder {
+    opacity: 0.5;
+    color: #999;
 }
 
 .button-group {
