@@ -308,9 +308,28 @@ async function downloadPDF() {
         const today = new Date().toISOString().split('T')[0];
         const filename = `Invoice_${customerName}_${today}.pdf`;
 
-        // Download PDF
+        // Download PDF with better iOS support
         console.log('Saving PDF:', filename);
-        pdf.save(filename);
+
+        // Create blob and download link
+        const pdfBlob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+
+        // Create temporary link element
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        link.style.display = 'none';
+
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up blob URL after a delay
+        setTimeout(() => {
+            URL.revokeObjectURL(blobUrl);
+        }, 100);
 
     } catch (error) {
         console.error('Error generating PDF:', error);
