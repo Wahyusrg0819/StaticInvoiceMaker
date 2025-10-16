@@ -304,12 +304,34 @@ async function downloadPDF() {
         }
 
         // Generate filename with customer name and date
-        const customerName = document.getElementById('nama').value.replace(/\s+/g, '_');
+        const customerName = document.getElementById('nama').value.replace(/\s+/g, '_') || 'Customer';
         const today = new Date().toISOString().split('T')[0];
         const filename = `Invoice_${customerName}_${today}.pdf`;
 
-        // Download
-        pdf.save(filename);
+        // Check if running on iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isIOS && navigator.share) {
+            // Use Web Share API for iOS
+            const pdfBlob = pdf.output('blob');
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: filename,
+                    text: 'Invoice Sewa Mobil'
+                });
+                console.log('PDF shared successfully');
+            } catch (err) {
+                // If share fails, fallback to download
+                console.log('Share failed, using download instead');
+                pdf.save(filename);
+            }
+        } else {
+            // Regular download for non-iOS devices
+            pdf.save(filename);
+        }
 
     } catch (error) {
         console.error('Error generating PDF:', error);
@@ -329,12 +351,12 @@ document.getElementById('print-btn').addEventListener('click', () => {
     const customerName = document.getElementById('nama').value.replace(/\s+/g, '_') || 'Customer';
     const today = new Date().toISOString().split('T')[0];
     const filename = `Invoice_${customerName}_${today}`;
-    
+
     document.title = filename;
-    
+
     // Print
     window.print();
-    
+
     // Restore original title after print dialog closes
     setTimeout(() => {
         document.title = originalTitle;
