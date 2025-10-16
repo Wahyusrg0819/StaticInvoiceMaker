@@ -308,28 +308,38 @@ async function downloadPDF() {
         const today = new Date().toISOString().split('T')[0];
         const filename = `Invoice_${customerName}_${today}.pdf`;
 
-        // Download PDF with better iOS support
+        // Download PDF
         console.log('Saving PDF:', filename);
 
-        // Create blob and download link
-        const pdfBlob = pdf.output('blob');
-        const blobUrl = URL.createObjectURL(pdfBlob);
+        // Check if iOS and Web Share API is available
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-        // Create temporary link element
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        link.style.display = 'none';
+        if (isIOS && navigator.share) {
+            // Use Web Share API for iOS
+            try {
+                const pdfBlob = pdf.output('blob');
+                const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
-        // Append to body, click, and remove
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+                await navigator.share({
+                    files: [file],
+                    title: 'Invoice Sewa Mobil',
+                    text: 'Invoice ' + filename
+                });
 
-        // Clean up blob URL after a delay
-        setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-        }, 100);
+                console.log('PDF shared successfully');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.log('Share failed:', err);
+                    // Fallback: open in new tab
+                    const pdfBlob = pdf.output('blob');
+                    const blobUrl = URL.createObjectURL(pdfBlob);
+                    window.open(blobUrl, '_blank');
+                }
+            }
+        } else {
+            // Regular download for non-iOS
+            pdf.save(filename);
+        }
 
     } catch (error) {
         console.error('Error generating PDF:', error);
@@ -340,8 +350,210 @@ async function downloadPDF() {
     }
 }
 
+// Share PDF function
+async function sharePDF() {
+    const button = document.getElementById('share-pdf-btn');
+    const originalText = button.textContent;
+    button.textContent = 'Preparing...';
+    button.disabled = true;
+
+    try {
+        // Check if Web Share API is available
+        if (!navigator.share) {
+            alert('Share tidak didukung di browser ini. Gunakan tombol Download PDF.');
+            return;
+        }
+
+        const invoice = document.getElementById('invoice');
+
+        // Temporarily show invoice if hidden (mobile)
+        const originalDisplay = invoice.style.display;
+        const originalWidth = invoice.style.width;
+        const originalMaxWidth = invoice.style.maxWidth;
+        const originalPadding = invoice.style.padding;
+
+        invoice.style.display = 'block';
+        invoice.style.position = 'relative';
+        invoice.style.visibility = 'visible';
+        invoice.style.width = '190mm';
+        invoice.style.maxWidth = '190mm';
+        invoice.style.padding = '5mm 6mm 15mm 6mm';
+        invoice.style.fontSize = '12px';
+        invoice.style.lineHeight = '1.4';
+
+        // Reduce spacing for all sections
+        const sections = invoice.querySelectorAll('.customer-section, .details-section, .cost-section, .payment-section');
+        sections.forEach(section => {
+            section.style.marginBottom = '10px';
+        });
+
+        const divider = invoice.querySelector('.divider');
+        if (divider) divider.style.margin = '10px 0';
+
+        const header = invoice.querySelector('.invoice-header');
+        if (header) {
+            header.style.marginBottom = '8px';
+            const h1 = header.querySelector('h1');
+            if (h1) h1.style.marginBottom = '8px';
+            const companyInfo = header.querySelector('.company-info');
+            if (companyInfo) {
+                const paragraphs = companyInfo.querySelectorAll('p');
+                paragraphs.forEach(p => p.style.margin = '2px 0');
+            }
+        }
+
+        const infoRows = invoice.querySelectorAll('.info-row');
+        infoRows.forEach(row => {
+            row.style.marginBottom = '3px';
+        });
+
+        const paymentSection = invoice.querySelector('.payment-section');
+        if (paymentSection) {
+            paymentSection.style.marginBottom = '5px';
+        }
+
+        const tables = invoice.querySelectorAll('table');
+        tables.forEach(table => {
+            table.style.marginTop = '5px';
+            const cells = table.querySelectorAll('th, td');
+            cells.forEach(cell => {
+                cell.style.padding = '6px';
+                cell.style.fontSize = '11px';
+            });
+        });
+
+        invoice.classList.add('no-watermark');
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        invoice.offsetHeight;
+
+        const canvas = await html2canvas(invoice, {
+            scale: 1.2,
+            logging: false,
+            backgroundColor: '#ffffff',
+            width: invoice.scrollWidth,
+            height: invoice.scrollHeight,
+            windowWidth: invoice.scrollWidth,
+            windowHeight: invoice.scrollHeight,
+            onclone: (clonedDoc) => {
+                const clonedInvoice = clonedDoc.getElementById('invoice');
+                if (clonedInvoice) {
+                    clonedInvoice.style.height = 'auto';
+                }
+            }
+        });
+
+        invoice.classList.remove('no-watermark');
+        invoice.style.display = originalDisplay;
+        invoice.style.width = originalWidth;
+        invoice.style.maxWidth = originalMaxWidth;
+        invoice.style.padding = originalPadding;
+
+        if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            throw new Error(`Canvas capture failed`);
+        }
+
+        const pdfWidth = 210;
+        const pdfHeight = 297;
+        const marginX = 5;
+        const marginY = 8;
+        const availableWidth = pdfWidth - (marginX * 2);
+        const availableHeight = pdfHeight - (marginY * 2);
+
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const pxToMm = 0.264583;
+        let imgWidthMm = imgWidth * pxToMm;
+        let imgHeightMm = imgHeight * pxToMm;
+
+        const widthRatio = availableWidth / imgWidthMm;
+        const heightRatio = availableHeight / imgHeightMm;
+        const scale = Math.min(widthRatio, heightRatio);
+
+        let finalWidth = imgWidthMm * scale;
+        let finalHeight = imgHeightMm * scale;
+
+        if (!finalWidth || finalWidth <= 0 || isNaN(finalWidth)) {
+            finalWidth = availableWidth;
+        }
+        if (!finalHeight || finalHeight <= 0 || isNaN(finalHeight)) {
+            finalHeight = availableHeight;
+        }
+
+        let xOffset = marginX;
+        let yOffset = marginY;
+
+        if (isNaN(xOffset) || xOffset < 0) {
+            xOffset = marginX;
+        }
+        if (isNaN(yOffset) || yOffset < 0) {
+            yOffset = marginY;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+
+        try {
+            const watermarkImg = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('Failed to load watermark'));
+                img.src = 'https://res.cloudinary.com/devdvp44p/image/upload/v1760606379/My%20Brand/image-removebg-preview_lwqo5r.png';
+                setTimeout(() => reject(new Error('Watermark load timeout')), 5000);
+            });
+
+            const watermarkWidth = pdfWidth * 0.5;
+            const watermarkHeight = (watermarkImg.height / watermarkImg.width) * watermarkWidth;
+            const watermarkX = (pdfWidth - watermarkWidth) / 2;
+            const watermarkY = (pdfHeight - watermarkHeight) / 2;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = watermarkImg.width;
+            tempCanvas.height = watermarkImg.height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(watermarkImg, 0, 0);
+            const watermarkData = tempCanvas.toDataURL('image/png');
+
+            pdf.setGState(new pdf.GState({ opacity: 0.15 }));
+            pdf.addImage(watermarkData, 'PNG', watermarkX, watermarkY, watermarkWidth, watermarkHeight);
+            pdf.setGState(new pdf.GState({ opacity: 1 }));
+        } catch (e) {
+            console.log('Watermark failed to load:', e.message);
+        }
+
+        const customerName = document.getElementById('nama').value.replace(/\s+/g, '_') || 'Customer';
+        const today = new Date().toISOString().split('T')[0];
+        const filename = `Invoice_${customerName}_${today}.pdf`;
+
+        const pdfBlob = pdf.output('blob');
+        const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+        await navigator.share({
+            files: [file],
+            title: 'Invoice Sewa Mobil',
+            text: 'Invoice ' + filename
+        });
+
+        console.log('PDF shared successfully');
+
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error('Error sharing PDF:', error);
+            alert('Gagal share PDF. Gunakan tombol Download PDF sebagai alternatif.');
+        }
+    } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+    }
+}
+
 // Event listeners
 document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
+document.getElementById('share-pdf-btn').addEventListener('click', sharePDF);
 
 document.getElementById('print-btn').addEventListener('click', () => {
     // Change page title temporarily for print filename
