@@ -308,35 +308,9 @@ async function downloadPDF() {
         const today = new Date().toISOString().split('T')[0];
         const filename = `Invoice_${customerName}_${today}.pdf`;
 
-        // Try to use Web Share API if available (better for mobile)
-        if (navigator.share && navigator.canShare) {
-            try {
-                const pdfBlob = pdf.output('blob');
-                const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
-                // Check if can share files
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        files: [file],
-                        title: filename,
-                        text: 'Invoice Sewa Mobil'
-                    });
-                    console.log('PDF shared successfully');
-                } else {
-                    // Can't share files, use regular download
-                    pdf.save(filename);
-                }
-            } catch (err) {
-                // If share is cancelled or fails, use regular download
-                if (err.name !== 'AbortError') {
-                    console.log('Share failed, using download:', err.message);
-                }
-                pdf.save(filename);
-            }
-        } else {
-            // Regular download for devices without share API
-            pdf.save(filename);
-        }
+        // Download PDF
+        console.log('Saving PDF:', filename);
+        pdf.save(filename);
 
     } catch (error) {
         console.error('Error generating PDF:', error);
