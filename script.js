@@ -308,28 +308,33 @@ async function downloadPDF() {
         const today = new Date().toISOString().split('T')[0];
         const filename = `Invoice_${customerName}_${today}.pdf`;
 
-        // Check if running on iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-        if (isIOS && navigator.share) {
-            // Use Web Share API for iOS
-            const pdfBlob = pdf.output('blob');
-            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-
+        // Try to use Web Share API if available (better for mobile)
+        if (navigator.share && navigator.canShare) {
             try {
-                await navigator.share({
-                    files: [file],
-                    title: filename,
-                    text: 'Invoice Sewa Mobil'
-                });
-                console.log('PDF shared successfully');
+                const pdfBlob = pdf.output('blob');
+                const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+                // Check if can share files
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: filename,
+                        text: 'Invoice Sewa Mobil'
+                    });
+                    console.log('PDF shared successfully');
+                } else {
+                    // Can't share files, use regular download
+                    pdf.save(filename);
+                }
             } catch (err) {
-                // If share fails, fallback to download
-                console.log('Share failed, using download instead');
+                // If share is cancelled or fails, use regular download
+                if (err.name !== 'AbortError') {
+                    console.log('Share failed, using download:', err.message);
+                }
                 pdf.save(filename);
             }
         } else {
-            // Regular download for non-iOS devices
+            // Regular download for devices without share API
             pdf.save(filename);
         }
 
