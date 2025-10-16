@@ -119,23 +119,78 @@ async function downloadPDF() {
         invoice.style.display = 'block';
         invoice.style.position = 'relative';
         invoice.style.visibility = 'visible';
-        invoice.style.width = '210mm'; // A4 width
-        invoice.style.maxWidth = '210mm';
-        invoice.style.padding = '10mm 8mm'; // Smaller padding for more content
+        invoice.style.width = '190mm'; // Slightly smaller to fit better
+        invoice.style.maxWidth = '190mm';
+        invoice.style.padding = '5mm 6mm 15mm 6mm'; // Normal top, extra bottom padding for "Atas Nama"
+        invoice.style.fontSize = '12px'; // Normal font
+        invoice.style.lineHeight = '1.4'; // Normal line height
+
+        // Reduce spacing for all sections
+        const sections = invoice.querySelectorAll('.customer-section, .details-section, .cost-section, .payment-section');
+        sections.forEach(section => {
+            section.style.marginBottom = '10px';
+        });
+
+        const divider = invoice.querySelector('.divider');
+        if (divider) divider.style.margin = '10px 0';
+
+        const header = invoice.querySelector('.invoice-header');
+        if (header) {
+            header.style.marginBottom = '8px';
+            const h1 = header.querySelector('h1');
+            if (h1) h1.style.marginBottom = '8px';
+            const companyInfo = header.querySelector('.company-info');
+            if (companyInfo) {
+                const paragraphs = companyInfo.querySelectorAll('p');
+                paragraphs.forEach(p => p.style.margin = '2px 0');
+            }
+        }
+
+        const infoRows = invoice.querySelectorAll('.info-row');
+        infoRows.forEach(row => {
+            row.style.marginBottom = '3px';
+        });
+
+        // Make payment section more compact
+        const paymentSection = invoice.querySelector('.payment-section');
+        if (paymentSection) {
+            paymentSection.style.marginBottom = '5px';
+        }
+
+        const tables = invoice.querySelectorAll('table');
+        tables.forEach(table => {
+            table.style.marginTop = '5px';
+            const cells = table.querySelectorAll('th, td');
+            cells.forEach(cell => {
+                cell.style.padding = '6px';
+                cell.style.fontSize = '12px'; // Increased from 10px to 11px
+            });
+        });
 
         // Temporarily hide watermark to avoid CORS issues
         invoice.classList.add('no-watermark');
 
-        // Wait a bit for style to apply
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait a bit for style to apply and force reflow
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Capture invoice as canvas
+        // Force browser to recalculate layout
+        invoice.offsetHeight;
+
+        // Capture invoice as canvas with full height
         const canvas = await html2canvas(invoice, {
-            scale: 1.5,
+            scale: 1.2,
             logging: false,
             backgroundColor: '#ffffff',
-            width: invoice.offsetWidth,
-            height: invoice.offsetHeight
+            width: invoice.scrollWidth,
+            height: invoice.scrollHeight,
+            windowWidth: invoice.scrollWidth,
+            windowHeight: invoice.scrollHeight,
+            onclone: (clonedDoc) => {
+                const clonedInvoice = clonedDoc.getElementById('invoice');
+                if (clonedInvoice) {
+                    clonedInvoice.style.height = 'auto';
+                }
+            }
         });
 
         // Restore watermark and original styles
@@ -187,15 +242,8 @@ async function downloadPDF() {
             finalHeight = availableHeight;
         }
 
-        // Use full available width instead of centering
-        finalWidth = availableWidth;
-        finalHeight = (canvas.height / canvas.width) * availableWidth;
-
-        // Check if height exceeds available height
-        if (finalHeight > availableHeight) {
-            finalHeight = availableHeight;
-            finalWidth = (canvas.width / canvas.height) * availableHeight;
-        }
+        // Don't override - use the calculated scale that fits both width and height
+        // finalWidth and finalHeight already calculated above with Math.min(widthRatio, heightRatio)
 
         // Align to left margin
         let xOffset = marginX;

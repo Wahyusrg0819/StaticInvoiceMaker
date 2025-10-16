@@ -83,11 +83,11 @@ body {
 .divider {
     border: none;
     border-top: 2px solid #333;
-    margin: 20px 0;
+    margin: 15px 0;
 }
 
 .customer-section {
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 
 .section-title {
@@ -118,7 +118,7 @@ body {
 .details-section,
 .cost-section,
 .payment-section {
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 
 .details-section h3,
