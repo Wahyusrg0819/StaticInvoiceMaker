@@ -326,7 +326,21 @@ document.getElementById('update-btn').addEventListener('click', updateInvoice);
 document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
 
 document.getElementById('print-btn').addEventListener('click', () => {
+    // Change page title temporarily for print filename
+    const originalTitle = document.title;
+    const customerName = document.getElementById('nama').value.replace(/\s+/g, '_') || 'Customer';
+    const today = new Date().toISOString().split('T')[0];
+    const filename = `Invoice_${customerName}_${today}`;
+    
+    document.title = filename;
+    
+    // Print
     window.print();
+    
+    // Restore original title after print dialog closes
+    setTimeout(() => {
+        document.title = originalTitle;
+    }, 1000);
 });
 
 // Auto-update on input change
