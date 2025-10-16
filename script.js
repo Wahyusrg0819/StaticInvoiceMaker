@@ -321,8 +321,6 @@ async function downloadPDF() {
 }
 
 // Event listeners
-document.getElementById('update-btn').addEventListener('click', updateInvoice);
-
 document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
 
 document.getElementById('print-btn').addEventListener('click', () => {
