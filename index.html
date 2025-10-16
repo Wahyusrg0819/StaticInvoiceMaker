@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Maker - Sewa Mobil Harian</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="invoice-wrapper" id="invoice">
+            <!-- Header -->
+            <div class="invoice-header">
+                <h1>INVOICE SEWA MOBIL HARIAN</h1>
+                <div class="company-info">
+                    <p class="company-name">PT Rental Mobil Jaya</p>
+                    <p>Jl. Sudirman No. 456, Jakarta</p>
+                    <p>Email: info@rentalmobiljaya.com</p>
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <!-- Customer Info -->
+            <div class="customer-section">
+                <p class="section-title">Kepada Yth.,</p>
+                <div class="info-row">
+                    <span class="label">Nama</span>
+                    <span class="colon">:</span>
+                    <span class="value" id="display-nama">John Doe</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Alamat</span>
+                    <span class="colon">:</span>
+                    <span class="value" id="display-alamat">Jl. Merdeka No. 123, Jakarta</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">No. Telepon</span>
+                    <span class="colon">:</span>
+                    <span class="value" id="display-telepon">0821-3654-7098</span>
+                </div>
+            </div>
+
+            <!-- Rental Details -->
+            <div class="details-section">
+                <h3>Detail Rental Mobil</h3>
+                <table class="details-table">
+                    <thead>
+                        <tr>
+                            <th>Deskripsi</th>
+                            <th>Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Merek Mobil</td>
+                            <td id="display-merek">Toyota Avanza</td>
+                        </tr>
+                        <tr>
+                            <td>Plat Nomor</td>
+                            <td id="display-plat">B 1234 XYZ</td>
+                        </tr>
+                        <tr>
+                            <td>Tanggal Sewa</td>
+                            <td id="display-tgl-sewa">15 Januari 2025</td>
+                        </tr>
+                        <tr>
+                            <td>Tanggal Kembali</td>
+                            <td id="display-tgl-kembali">17 Januari 2025</td>
+                        </tr>
+                        <tr>
+                            <td>Lama Sewa</td>
+                            <td id="display-lama-sewa">2 Hari</td>
+                        </tr>
+                        <tr>
+                            <td>Harga Sewa per Hari</td>
+                            <td id="display-harga-per-hari">Rp 400.000</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="cost-section">
+                <h3>Rincian Biaya</h3>
+                <table class="cost-table">
+                    <thead>
+                        <tr>
+                            <th>Deskripsi</th>
+                            <th>Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="display-biaya-sewa-label">Biaya Sewa (2 Hari)</td>
+                            <td id="display-biaya-sewa">Rp 800.000</td>
+                        </tr>
+                        <tr>
+                            <td>Biaya Tambahan (Opsional)</td>
+                            <td id="display-biaya-tambahan">Rp 0</td>
+                        </tr>
+                        <tr>
+                            <td id="display-pajak-label">Pajak (10%)</td>
+                            <td id="display-pajak">Rp 80.000</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td><strong>Total Pembayaran</strong></td>
+                            <td><strong id="display-total">Rp 880.000</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-section">
+                <h3>Metode Pembayaran</h3>
+                <div class="info-row">
+                    <span class="label">Transfer Bank</span>
+                    <span class="colon">:</span>
+                    <span class="value" id="display-bank">BCA</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">No. Rekening</span>
+                    <span class="colon">:</span>
+                    <span class="value" id="display-rekening">123-456-7890</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Atas Nama</span>
+                    <span class="colon">:</span>
+                    <span class="value" id="display-atas-nama">PT Rental Mobil Jaya</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Input -->
+        <div class="form-wrapper">
+            <h2>Edit Invoice</h2>
+            <form id="invoice-form">
+                <div class="form-section">
+                    <h3>Informasi Pelanggan</h3>
+                    <div class="form-group">
+                        <label for="nama">Nama:</label>
+                        <input type="text" id="nama" value="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="alamat">Alamat:</label>
+                        <input type="text" id="alamat" value="Jl. Merdeka No. 123, Jakarta" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telepon">No. Telepon:</label>
+                        <input type="tel" id="telepon" value="0821-3654-7098" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Detail Rental</h3>
+                    <div class="form-group">
+                        <label for="merek">Merek Mobil:</label>
+                        <input type="text" id="merek" value="Toyota Avanza" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="plat">Plat Nomor:</label>
+                        <input type="text" id="plat" value="B 1234 XYZ" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tgl-sewa">Tanggal Sewa:</label>
+                        <input type="date" id="tgl-sewa" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tgl-kembali">Tanggal Kembali:</label>
+                        <input type="date" id="tgl-kembali" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="harga-per-hari">Harga per Hari (Rp):</label>
+                        <input type="number" id="harga-per-hari" value="400000" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Biaya Tambahan</h3>
+                    <div class="form-group">
+                        <label for="biaya-tambahan">Biaya Tambahan (Rp):</label>
+                        <input type="number" id="biaya-tambahan" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="pajak">Pajak (%):</label>
+                        <input type="number" id="pajak" value="10" step="0.1">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Metode Pembayaran</h3>
+                    <div class="form-group">
+                        <label for="bank">Bank:</label>
+                        <input type="text" id="bank" value="BCA" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rekening">No. Rekening:</label>
+                        <input type="text" id="rekening" value="123-456-7890" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="atas-nama">Atas Nama:</label>
+                        <input type="text" id="atas-nama" value="PT Rental Mobil Jaya" required>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="button" id="update-btn" class="btn btn-primary">Update Invoice</button>
+                    <button type="button" id="print-btn" class="btn btn-secondary">Print Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
