@@ -207,7 +207,7 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
-    color: rgba(0, 0, 0, 0.3);
+    color: rgba(0, 0, 0, 1);
 }
 
 .form-group input:focus {
